@@ -88,6 +88,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://brandbazarbymirsa.vercel.app',
+    'https://multi-brand-fashion-ecommerce-websi.vercel.app',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
