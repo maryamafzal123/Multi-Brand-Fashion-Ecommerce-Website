@@ -85,7 +85,10 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = ['http://localhost:3000', 'https://signaturesbyisham.com']
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'https://brandbazarbymirsa.vercel.app',
+]
 CORS_ALLOW_CREDENTIALS = True
 
 JAZZCASH_MERCHANT_ID    = config('JAZZCASH_MERCHANT_ID',    default='YOUR_MERCHANT_ID')
