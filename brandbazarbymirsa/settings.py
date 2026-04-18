@@ -113,19 +113,13 @@ ADMIN_EMAIL         = config('ADMIN_EMAIL')
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', cast=bool, default=False)
 
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': config('CLOUDINARY_API_KEY'),
-    'API_SECRET': config('CLOUDINARY_API_SECRET'),
-}
-
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
+    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+},
 }
 
 cloudinary.config(
@@ -134,4 +128,17 @@ cloudinary.config(
     api_secret=config('CLOUDINARY_API_SECRET'),
 )
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
+    'MEDIA_TAG': 'media',
+    'INVALID_VIDEO_ERROR_MESSAGE': 'Please upload a valid video file.',
+    'EXCLUDE_DELETE_ORPHANED_MEDIA_PATHS': ('', 'exports/'),
+    'STATIC_TAG': 'static',
+    'STATICFILES_MANIFEST_ROOT': '',
+    'STATIC_IMAGES_EXTENSIONS': ['jpg', 'jpe', 'jpeg', 'jpc', 'jp2', 'j2k', 'wdp', 'jxr', 'hdp', 'png', 'gif', 'webp', 'bmp', 'tif', 'tiff', 'ico'],
+    'STATIC_VIDEOS_EXTENSIONS': ['mp4', 'webm', 'flv', 'mov', 'ogv', 'wmv', 'avi', 'mkv'],
+    'MAGIC_FILE_PATH': 'magic',
+    'PREFIX': '',
+}
