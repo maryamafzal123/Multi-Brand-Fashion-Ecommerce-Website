@@ -1,1 +1,1 @@
-web: gunicorn brandbazarbymirsa.wsgi:application
+web: python manage.py migrate && gunicorn brandbazarbymirsa.wsgi:application
