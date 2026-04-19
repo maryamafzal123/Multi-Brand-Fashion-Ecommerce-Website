@@ -3,6 +3,13 @@ from django.utils.text import slugify
 from cloudinary_storage.storage import MediaCloudinaryStorage
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
+from django.core.exceptions import ValidationError
+
+def validate_file_size(value):
+    limit = 10 * 1024 * 1024  # 10MB
+    if value.size > limit:
+        raise ValidationError(f'File too large! Max size is 10MB. Your file is {round(value.size/1024/1024, 1)}MB')
+    
 class Category(models.Model):
     name       = models.CharField(max_length=100, unique=True)
     slug       = models.SlugField(unique=True, db_index=True)
@@ -85,7 +92,8 @@ class ProductImage(models.Model):
     )
     image = models.FileField(
     upload_to='products/',
-    storage=RawMediaCloudinaryStorage()
+    storage=RawMediaCloudinaryStorage(),
+    validators=[validate_file_size]
 )
     is_primary = models.BooleanField(default=False)
     order      = models.PositiveSmallIntegerField(default=0)
