@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from cloudinary_storage.storage import MediaCloudinaryStorage
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
 class Category(models.Model):
     name       = models.CharField(max_length=100, unique=True)
@@ -82,10 +83,10 @@ class ProductImage(models.Model):
         Product, on_delete=models.CASCADE,
         related_name='images', db_index=True
     )
-    image      = models.FileField(
-        upload_to='products/',
-        storage=MediaCloudinaryStorage()
-    )
+    image = models.FileField(
+    upload_to='products/',
+    storage=RawMediaCloudinaryStorage()
+)
     is_primary = models.BooleanField(default=False)
     order      = models.PositiveSmallIntegerField(default=0)
 
