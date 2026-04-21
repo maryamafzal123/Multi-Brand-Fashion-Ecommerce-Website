@@ -17,16 +17,21 @@ def get_optimized_order_queryset(user):
             )
         )
     )
-    if user.role == 'admin':
+    if user.is_authenticated and hasattr(user, 'role') and user.role == 'admin':
         return qs.all()
-    return qs.filter(user=user)
+    if user.is_authenticated:
+        return qs.filter(user=user)
+    return qs.none()
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    # Allow anyone to POST (guest checkout), only authenticated can GET
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return get_optimized_order_queryset(self.request.user)
+        if self.request.user.is_authenticated:
+            return get_optimized_order_queryset(self.request.user)
+        return Order.objects.none()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -55,15 +60,11 @@ class OrderDetailView(generics.RetrieveAPIView):
 
 
 class OrderStatusUpdateView(APIView):
-    """Admin only — update order status."""
     permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, pk):
-        if request.user.role != 'admin':
-            return Response(
-                {'error': 'Permission denied.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if not hasattr(request.user, 'role') or request.user.role != 'admin':
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         try:
             order = Order.objects.select_related('user').prefetch_related('items').get(pk=pk)
         except Order.DoesNotExist:
@@ -78,9 +79,7 @@ class OrderStatusUpdateView(APIView):
         order.status = new_status
         order.save(update_fields=['status'])
 
-        # Send emails based on status change
         from .emails import send_order_shipped_customer, send_order_cancelled_customer
-
         if new_status == 'shipped' and old_status != 'shipped':
             send_order_shipped_customer(order)
         elif new_status == 'cancelled' and old_status != 'cancelled':
@@ -90,7 +89,6 @@ class OrderStatusUpdateView(APIView):
 
 
 class OrderCancelView(APIView):
-    """Customer cancels their own order."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
@@ -100,15 +98,11 @@ class OrderCancelView(APIView):
             return Response({'error': 'Order not found.'}, status=404)
 
         if order.status not in ['pending', 'confirmed']:
-            return Response(
-                {'error': 'Only pending or confirmed orders can be cancelled.'},
-                status=400
-            )
+            return Response({'error': 'Only pending or confirmed orders can be cancelled.'}, status=400)
 
         order.status = 'cancelled'
         order.save(update_fields=['status'])
 
-        # Send cancellation email to customer
         from .emails import send_order_cancelled_customer
         order_with_user = Order.objects.select_related('user').prefetch_related('items').get(pk=pk)
         send_order_cancelled_customer(order_with_user)

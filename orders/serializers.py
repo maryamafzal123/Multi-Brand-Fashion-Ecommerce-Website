@@ -3,7 +3,6 @@ from django.db import transaction
 from django.db.models import F
 from .models import Order, OrderItem
 from products.models import Product, ProductVariant
-from users.models import Address
 from .emails import send_order_placed_admin, send_order_confirmation_customer
 
 
@@ -19,18 +18,31 @@ class OrderItemWriteSerializer(serializers.Serializer):
 
 
 class OrderCreateSerializer(serializers.Serializer):
-    shipping_address_id = serializers.IntegerField()
-    payment_method      = serializers.ChoiceField(
-        choices=['cod', 'bank']
-    )
-    notes               = serializers.CharField(required=False, allow_blank=True)
-    items               = OrderItemWriteSerializer(many=True)
+    # Guest fields
+    guest_name    = serializers.CharField(required=False, allow_blank=True)
+    guest_email   = serializers.EmailField(required=False, allow_blank=True)
+    guest_phone   = serializers.CharField(required=False, allow_blank=True)
+    guest_address = serializers.CharField(required=False, allow_blank=True)
 
-    def validate_shipping_address_id(self, value):
-        user = self.context['request'].user
-        if not Address.objects.filter(id=value, user=user).exists():
-            raise serializers.ValidationError('Address not found.')
-        return value
+    payment_method = serializers.ChoiceField(choices=['cod', 'bank'])
+    notes          = serializers.CharField(required=False, allow_blank=True)
+    items          = OrderItemWriteSerializer(many=True)
+
+    def validate(self, data):
+        # Must have either guest info or authenticated user
+        request = self.context.get('request')
+        is_authenticated = request and request.user and request.user.is_authenticated
+
+        if not is_authenticated:
+            if not data.get('guest_name'):
+                raise serializers.ValidationError({'guest_name': 'Name is required.'})
+            if not data.get('guest_email'):
+                raise serializers.ValidationError({'guest_email': 'Email is required.'})
+            if not data.get('guest_phone'):
+                raise serializers.ValidationError({'guest_phone': 'Phone is required.'})
+            if not data.get('guest_address'):
+                raise serializers.ValidationError({'guest_address': 'Address is required.'})
+        return data
 
     def validate_items(self, items):
         if not items:
@@ -50,26 +62,25 @@ class OrderCreateSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        user       = self.context['request'].user
+        request    = self.context.get('request')
         items_data = validated_data.pop('items')
+        is_authenticated = request and request.user and request.user.is_authenticated
 
-        # Lock products with select_for_update — prevents race conditions
+        # Lock products
         product_ids  = [item['product_id'] for item in items_data]
         products     = Product.objects.select_for_update(of=('self',)).filter(
             id__in=product_ids
         ).select_related('category')
         products_map = {p.id: p for p in products}
 
-        # Lock variants too if any
+        # Lock variants
         variant_ids  = [item['variant_id'] for item in items_data if item.get('variant_id')]
         variants_map = {}
         if variant_ids:
-            variants     = ProductVariant.objects.select_for_update(of=('self',)).filter(
-                id__in=variant_ids
-            )
+            variants     = ProductVariant.objects.select_for_update(of=('self',)).filter(id__in=variant_ids)
             variants_map = {v.id: v for v in variants}
 
-        # Re-validate stock INSIDE the lock
+        # Re-validate stock
         for item_data in items_data:
             product    = products_map[item_data['product_id']]
             variant_id = item_data.get('variant_id')
@@ -80,25 +91,28 @@ class OrderCreateSerializer(serializers.Serializer):
                 if not variant or variant.stock < qty:
                     available = variant.stock if variant else 0
                     raise serializers.ValidationError(
-                        f'Sorry! Only {available} left for "{product.name}". Please update your cart.'
+                        f'Sorry! Only {available} left for "{product.name}".'
                     )
             else:
                 if product.stock < qty:
                     raise serializers.ValidationError(
-                        f'Sorry! Only {product.stock} left for "{product.name}". Please update your cart.'
+                        f'Sorry! Only {product.stock} left for "{product.name}".'
                     )
 
         # Create order
         order = Order.objects.create(
-            user=user,
-            shipping_address_id=validated_data['shipping_address_id'],
+            user=request.user if is_authenticated else None,
+            guest_name=validated_data.get('guest_name', ''),
+            guest_email=validated_data.get('guest_email', ''),
+            guest_phone=validated_data.get('guest_phone', ''),
+            guest_address=validated_data.get('guest_address', ''),
             payment_method=validated_data['payment_method'],
             notes=validated_data.get('notes', ''),
             subtotal=0,
             total=0,
         )
 
-        # Bulk create all order items
+        # Create order items
         order_items = []
         for item_data in items_data:
             product = products_map[item_data['product_id']]
@@ -116,20 +130,16 @@ class OrderCreateSerializer(serializers.Serializer):
 
         OrderItem.objects.bulk_create(order_items)
 
-        # Deduct stock atomically
+        # Deduct stock
         for item_data in items_data:
             product = products_map[item_data['product_id']]
             variant = variants_map.get(item_data.get('variant_id'))
             qty     = item_data['quantity']
 
             if variant:
-                ProductVariant.objects.filter(id=variant.id).update(
-                    stock=F('stock') - qty
-                )
+                ProductVariant.objects.filter(id=variant.id).update(stock=F('stock') - qty)
             else:
-                Product.objects.filter(id=product.id).update(
-                    stock=F('stock') - qty
-                )
+                Product.objects.filter(id=product.id).update(stock=F('stock') - qty)
 
         order.calculate_total()
         transaction.on_commit(lambda: send_order_placed_admin(order))
@@ -153,6 +163,6 @@ class OrderSerializer(serializers.ModelSerializer):
         model  = Order
         fields = [
             'id', 'order_number', 'status', 'payment_method', 'payment_status',
-            'subtotal', 'delivery_charge', 'total',
-            'notes', 'items', 'created_at',
+            'subtotal', 'delivery_charge', 'total', 'guest_name', 'guest_email',
+            'guest_phone', 'guest_address', 'notes', 'items', 'created_at',
         ]

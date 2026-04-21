@@ -11,19 +11,26 @@ class Order(models.Model):
         ('cancelled',  'Cancelled'),
     ]
     PAYMENT_METHOD_CHOICES = [
-    ('cod',  'Cash on Delivery'),
-    ('bank', 'Bank Transfer'),
+        ('cod',  'Cash on Delivery'),
+        ('bank', 'Bank Transfer'),
     ]
 
     user = models.ForeignKey(
         User, on_delete=models.SET_NULL,
-        null=True, related_name='orders',
+        null=True, blank=True, related_name='orders',
         db_index=True
     )
     shipping_address = models.ForeignKey(
         Address, on_delete=models.SET_NULL,
-        null=True, db_index=True
+        null=True, blank=True, db_index=True
     )
+
+    # ── Guest fields ──
+    guest_name    = models.CharField(max_length=200, blank=True)
+    guest_email   = models.EmailField(blank=True)
+    guest_phone   = models.CharField(max_length=20, blank=True)
+    guest_address = models.TextField(blank=True)
+
     status           = models.CharField(
         max_length=20, choices=STATUS_CHOICES,
         default='pending', db_index=True
@@ -52,7 +59,8 @@ class Order(models.Model):
         ]
 
     def __str__(self):
-        return f"Order #{self.id} — {self.user}"
+        name = self.guest_name or (self.user.full_name if self.user else 'Unknown')
+        return f"Order #{self.id} — {name}"
 
     @property
     def order_number(self):
@@ -68,8 +76,9 @@ class Order(models.Model):
         ).aggregate(subtotal=Sum('line_total'))
 
         self.subtotal = result['subtotal'] or 0
+        self.delivery_charge = 0 if self.subtotal >= 3000 else 200
         self.total    = self.subtotal + self.delivery_charge
-        self.save(update_fields=['subtotal', 'total'])
+        self.save(update_fields=['subtotal', 'delivery_charge', 'total'])
 
 
 class OrderItem(models.Model):
