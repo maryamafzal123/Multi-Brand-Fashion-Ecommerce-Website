@@ -63,7 +63,7 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     list_filter = ['category', 'gender', 'is_featured', 'is_active']
     search_fields = ['name', 'description']
-    # prepopulated_fields = {'slug': ('name',)}
+    exclude = ['slug']
     list_editable = ['price', 'stock', 'is_featured', 'is_active']
     readonly_fields = ['created_at', 'updated_at']
     inlines = [ProductImageInline, ProductVariantInline]
