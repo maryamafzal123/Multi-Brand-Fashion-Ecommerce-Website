@@ -44,7 +44,7 @@ class Order(models.Model):
         db_index=True
     )
     subtotal         = models.DecimalField(max_digits=10, decimal_places=2)
-    delivery_charge  = models.DecimalField(max_digits=8, decimal_places=2, default=200)
+    delivery_charge  = models.DecimalField(max_digits=8, decimal_places=2, default=250)
     total            = models.DecimalField(max_digits=10, decimal_places=2)
     notes            = models.TextField(blank=True)
     created_at       = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -76,7 +76,7 @@ class Order(models.Model):
         ).aggregate(subtotal=Sum('line_total'))
 
         self.subtotal = result['subtotal'] or 0
-        self.delivery_charge = 0 if self.subtotal >= 3000 else 200
+        self.delivery_charge = 250  # flat rate on all orders
         self.total    = self.subtotal + self.delivery_charge
         self.save(update_fields=['subtotal', 'delivery_charge', 'total'])
 

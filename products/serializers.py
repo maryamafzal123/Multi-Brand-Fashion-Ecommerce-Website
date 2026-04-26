@@ -49,7 +49,6 @@ class ProductListSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(img.image.url) if request else img.image.url
         return None
 
-
 class ProductDetailSerializer(ProductListSerializer):
     images   = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)

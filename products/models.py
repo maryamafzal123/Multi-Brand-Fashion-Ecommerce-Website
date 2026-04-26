@@ -19,9 +19,7 @@ class Category(models.Model):
     class Meta:
         verbose_name_plural = 'Categories'
         ordering = ['name']
-        indexes = [
-            models.Index(fields=['slug']),
-        ]
+        indexes = [models.Index(fields=['slug'])]
 
     def __str__(self):
         return self.name
@@ -45,11 +43,7 @@ class Product(models.Model):
         ('unisex', 'Unisex'),
     ]
 
-    category    = models.ForeignKey(
-        Category, on_delete=models.SET_NULL,
-        null=True, related_name='products',
-        db_index=True
-    )
+    category    = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products', db_index=True)
     name        = models.CharField(max_length=200)
     slug        = models.SlugField(unique=True, db_index=True)
     description = models.TextField()
@@ -98,10 +92,7 @@ class Product(models.Model):
 
 
 class ProductImage(models.Model):
-    product    = models.ForeignKey(
-        Product, on_delete=models.CASCADE,
-        related_name='images', db_index=True
-    )
+    product    = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images', db_index=True)
     image = models.FileField(
         upload_to='products/',
         storage=RawMediaCloudinaryStorage(),
@@ -112,9 +103,7 @@ class ProductImage(models.Model):
 
     class Meta:
         ordering = ['order']
-        indexes = [
-            models.Index(fields=['product', 'is_primary']),
-        ]
+        indexes = [models.Index(fields=['product', 'is_primary'])]
 
     def save(self, *args, **kwargs):
         if self.is_primary:
@@ -125,19 +114,14 @@ class ProductImage(models.Model):
 
 
 class ProductVariant(models.Model):
-    product     = models.ForeignKey(
-        Product, on_delete=models.CASCADE,
-        related_name='variants', db_index=True
-    )
+    product     = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants', db_index=True)
     size        = models.CharField(max_length=20)
     color       = models.CharField(max_length=50, blank=True)
     stock       = models.PositiveIntegerField(default=0)
     extra_price = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 
     class Meta:
-        indexes = [
-            models.Index(fields=['product', 'size', 'color']),
-        ]
+        indexes = [models.Index(fields=['product', 'size', 'color'])]
 
     def __str__(self):
         return f"{self.product.name} — {self.size} / {self.color}"

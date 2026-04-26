@@ -54,21 +54,20 @@ class CategoryListView(generics.ListCreateAPIView):
 
 class ProductListView(generics.ListCreateAPIView):
     permission_classes = [IsAdminOrReadOnly]
-    filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields      = ['name', 'description']
+    filter_backends    = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields    = ['price', 'created_at']
     ordering           = ['-created_at']
 
     def get_queryset(self):
         qs = get_optimized_product_queryset()
 
-        # Filters from query params
-        category = self.request.query_params.get('category')
-        gender   = self.request.query_params.get('gender')
-        age      = self.request.query_params.get('age_range')
-        featured = self.request.query_params.get('featured')
+        category  = self.request.query_params.get('category')
+        gender    = self.request.query_params.get('gender')
+        age       = self.request.query_params.get('age_range')
+        featured  = self.request.query_params.get('featured')
         min_price = self.request.query_params.get('min_price')
         max_price = self.request.query_params.get('max_price')
+        search    = self.request.query_params.get('search', '').strip()
 
         if category:  qs = qs.filter(category__slug=category)
         if gender:    qs = qs.filter(gender=gender)
@@ -76,6 +75,13 @@ class ProductListView(generics.ListCreateAPIView):
         if featured:  qs = qs.filter(is_featured=True)
         if min_price: qs = qs.filter(price__gte=min_price)
         if max_price: qs = qs.filter(price__lte=max_price)
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(name__icontains=search) |
+                Q(description__icontains=search) |
+                Q(category__name__icontains=search)
+            )
 
         return qs
 
