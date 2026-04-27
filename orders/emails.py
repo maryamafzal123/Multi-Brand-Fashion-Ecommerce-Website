@@ -90,7 +90,7 @@ Payment:   {order.payment_method.upper()}
 ━━━━━━━━━━━━━━━━━━━━━━
 
 Need help? Contact us on WhatsApp:
-+92 333 6262574
++92 333 2742727
 
 Thank you for choosing Brand Bazar by Mirsa! ✨
 
@@ -134,7 +134,7 @@ Payment: {order.payment_method.upper()}
 ━━━━━━━━━━━━━━━━━━━━━━
 
 Need help? Contact us on WhatsApp:
-+92 333 6262574
++92 333 2742727
 
 Thank you for shopping with us! ✨
 
@@ -177,7 +177,7 @@ Payment: {order.payment_method.upper()}
 
 If you have any questions or did not request this cancellation,
 please contact us immediately on WhatsApp:
-+92 333 6262574
++92 333 2742727
 
 We hope to serve you again soon!
 
