@@ -45,7 +45,7 @@ Order Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[settings.ADMIN_EMAIL],
-        fail_silently=True,
+        fail_silently=False,
     )
 
 
@@ -102,7 +102,7 @@ Thank you for choosing Brand Bazar by Mirsa! ✨
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[customer_email],
-        fail_silently=True,
+        fail_silently=False,
     )
 
 
@@ -146,7 +146,7 @@ Thank you for shopping with us! ✨
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[customer_email],
-        fail_silently=True,
+        fail_silently=False,
     )
 
 
@@ -189,5 +189,5 @@ We hope to serve you again soon!
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[customer_email],
-        fail_silently=True,
+        fail_silently=False,
     )
