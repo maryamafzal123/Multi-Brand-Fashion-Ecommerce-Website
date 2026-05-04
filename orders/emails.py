@@ -1,15 +1,28 @@
-from django.core.mail import send_mail
+from django.core.mail import get_connection, EmailMessage
 from django.conf import settings
 
 
+def send_with_timeout(subject, message, from_email, recipient_list):
+    try:
+        connection = get_connection(timeout=10)
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=from_email,
+            to=recipient_list,
+            connection=connection,
+        )
+        email.send(fail_silently=False)
+    except Exception as e:
+        print(f"Email error: {e}")
+
+
 def send_order_placed_admin(order):
-    """Email to admin when new order is placed."""
     items_text = '\n'.join([
         f"  - {item.name} x{item.quantity} = Rs. {item.subtotal}"
         for item in order.items.all()
     ])
 
-    # Handle both authenticated and guest orders
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -40,23 +53,20 @@ Payment Status: {order.payment_status.upper()}
 Order Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
     """.strip()
 
-    send_mail(
+    send_with_timeout(
         subject=f'New Order {order.order_number} — Brand Bazar by Mirsa',
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[settings.ADMIN_EMAIL],
-        fail_silently=False,
     )
 
 
 def send_order_confirmation_customer(order):
-    """Email to customer when order is placed."""
     items_text = '\n'.join([
         f"  - {item.name} x{item.quantity} = Rs. {item.subtotal}"
         for item in order.items.all()
     ])
 
-    # Handle both authenticated and guest orders
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -97,18 +107,15 @@ Thank you for choosing Brand Bazar by Mirsa! ✨
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_mail(
+    send_with_timeout(
         subject=f'Order {order.order_number} Confirmed — Brand Bazar by Mirsa',
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[customer_email],
-        fail_silently=False,
     )
 
 
 def send_order_shipped_customer(order):
-    """Email to customer when order is shipped."""
-    # Handle both authenticated and guest orders
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -141,18 +148,15 @@ Thank you for shopping with us! ✨
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_mail(
+    send_with_timeout(
         subject=f'Order {order.order_number} Shipped — Brand Bazar by Mirsa',
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[customer_email],
-        fail_silently=False,
     )
 
 
 def send_order_cancelled_customer(order):
-    """Email to customer when order is cancelled."""
-    # Handle both authenticated and guest orders
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -184,10 +188,9 @@ We hope to serve you again soon!
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_mail(
+    send_with_timeout(
         subject=f'Order {order.order_number} Cancelled — Brand Bazar by Mirsa',
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[customer_email],
-        fail_silently=False,
     )
