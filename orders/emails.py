@@ -1,18 +1,17 @@
-from django.core.mail import get_connection, EmailMessage
+import resend
 from django.conf import settings
 
 
-def send_with_timeout(subject, message, from_email, recipient_list):
+def send_with_resend(subject, message, to_list):
     try:
-        connection = get_connection(timeout=10)
-        email = EmailMessage(
-            subject=subject,
-            body=message,
-            from_email=from_email,
-            to=recipient_list,
-            connection=connection,
-        )
-        email.send(fail_silently=False)
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send({
+            "from": "Brand Bazar by Mirsa <onboarding@resend.dev>",
+            "to": to_list,
+            "subject": subject,
+            "text": message,
+        })
+        print(f"Email sent successfully to {to_list}")
     except Exception as e:
         print(f"Email error: {e}")
 
@@ -22,7 +21,6 @@ def send_order_placed_admin(order):
         f"  - {item.name} x{item.quantity} = Rs. {item.subtotal}"
         for item in order.items.all()
     ])
-
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -53,11 +51,10 @@ Payment Status: {order.payment_status.upper()}
 Order Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
     """.strip()
 
-    send_with_timeout(
+    send_with_resend(
         subject=f'New Order {order.order_number} — Brand Bazar by Mirsa',
         message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[settings.ADMIN_EMAIL],
+        to_list=[settings.ADMIN_EMAIL],
     )
 
 
@@ -66,7 +63,6 @@ def send_order_confirmation_customer(order):
         f"  - {item.name} x{item.quantity} = Rs. {item.subtotal}"
         for item in order.items.all()
     ])
-
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -107,11 +103,10 @@ Thank you for choosing Brand Bazar by Mirsa! ✨
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_with_timeout(
+    send_with_resend(
         subject=f'Order {order.order_number} Confirmed — Brand Bazar by Mirsa',
         message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[customer_email],
+        to_list=[customer_email],
     )
 
 
@@ -148,11 +143,10 @@ Thank you for shopping with us! ✨
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_with_timeout(
+    send_with_resend(
         subject=f'Order {order.order_number} Shipped — Brand Bazar by Mirsa',
         message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[customer_email],
+        to_list=[customer_email],
     )
 
 
@@ -188,9 +182,8 @@ We hope to serve you again soon!
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_with_timeout(
+    send_with_resend(
         subject=f'Order {order.order_number} Cancelled — Brand Bazar by Mirsa',
         message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[customer_email],
+        to_list=[customer_email],
     )

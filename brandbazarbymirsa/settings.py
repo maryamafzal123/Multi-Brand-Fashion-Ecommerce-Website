@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
@@ -144,3 +145,5 @@ CLOUDINARY_STORAGE = {
     'MAGIC_FILE_PATH': 'magic',
     'PREFIX': '',
 }
+
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
