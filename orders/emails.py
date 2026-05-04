@@ -6,7 +6,7 @@ def send_with_resend(subject, message, to_list):
     try:
         resend.api_key = settings.RESEND_API_KEY
         resend.Emails.send({
-            "from": "Brand Bazar by Mirsa <onboarding@resend.dev>",
+            "from": "Brand Bazar by Mirsa <orders@brandbazarbymirsa.com>",
             "to": to_list,
             "subject": subject,
             "text": message,
