@@ -1,3 +1,4 @@
+import threading
 from rest_framework import serializers
 from django.db import transaction
 from django.db.models import F
@@ -142,8 +143,12 @@ class OrderCreateSerializer(serializers.Serializer):
                 Product.objects.filter(id=product.id).update(stock=F('stock') - qty)
 
         order.calculate_total()
-        transaction.on_commit(lambda: send_order_placed_admin(order))
-        transaction.on_commit(lambda: send_order_confirmation_customer(order))
+        transaction.on_commit(lambda: threading.Thread(
+            target=send_order_placed_admin, args=(order,), daemon=True
+        ).start())
+        transaction.on_commit(lambda: threading.Thread(
+            target=send_order_confirmation_customer, args=(order,), daemon=True
+        ).start())
         return order
 
 
