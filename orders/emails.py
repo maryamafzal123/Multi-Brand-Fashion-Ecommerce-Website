@@ -1,19 +1,5 @@
-import resend
+from django.core.mail import send_mail
 from django.conf import settings
-
-
-def send_with_resend(subject, message, to_list):
-    try:
-        resend.api_key = settings.RESEND_API_KEY
-        resend.Emails.send({
-            "from": "Brand Bazar by Mirsa <orders@brandbazarbymirsa.com>",
-            "to": to_list,
-            "subject": subject,
-            "text": message,
-        })
-        print(f"Email sent successfully to {to_list}")
-    except Exception as e:
-        print(f"Email error: {e}")
 
 
 def send_order_placed_admin(order):
@@ -51,10 +37,12 @@ Payment Status: {order.payment_status.upper()}
 Order Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
     """.strip()
 
-    send_with_resend(
+    send_mail(
         subject=f'New Order {order.order_number} — Brand Bazar by Mirsa',
         message=message,
-        to_list=[settings.ADMIN_EMAIL],
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[settings.ADMIN_EMAIL],
+        fail_silently=True,
     )
 
 
@@ -103,10 +91,12 @@ Thank you for choosing Brand Bazar by Mirsa! ✨
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_with_resend(
+    send_mail(
         subject=f'Order {order.order_number} Confirmed — Brand Bazar by Mirsa',
         message=message,
-        to_list=[customer_email],
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[customer_email],
+        fail_silently=True,
     )
 
 
@@ -143,10 +133,12 @@ Thank you for shopping with us! ✨
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_with_resend(
+    send_mail(
         subject=f'Order {order.order_number} Shipped — Brand Bazar by Mirsa',
         message=message,
-        to_list=[customer_email],
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[customer_email],
+        fail_silently=True,
     )
 
 
@@ -182,8 +174,10 @@ We hope to serve you again soon!
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_with_resend(
+    send_mail(
         subject=f'Order {order.order_number} Cancelled — Brand Bazar by Mirsa',
         message=message,
-        to_list=[customer_email],
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[customer_email],
+        fail_silently=True,
     )

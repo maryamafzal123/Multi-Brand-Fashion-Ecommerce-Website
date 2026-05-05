@@ -146,4 +146,3 @@ CLOUDINARY_STORAGE = {
     'PREFIX': '',
 }
 
-RESEND_API_KEY = config('RESEND_API_KEY', default='')
