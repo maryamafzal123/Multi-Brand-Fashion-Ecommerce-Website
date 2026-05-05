@@ -259,38 +259,62 @@ def send_order_shipped_customer(order):
         customer_name = order.guest_name
         customer_email = order.guest_email
 
-    message = f"""
-Hi {customer_name}! 🚚
+    plain_message = f"""
+Hi {customer_name}!
 
 Great news! Your order {order.order_number} is on its way to you!
-
-Your order has been shipped and will be delivered to you soon.
-
-━━━━━━━━━━━━━━━━━━━━━━
-ORDER SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━
 
 Order {order.order_number}
 Total: Rs. {order.total}
 Payment: {order.payment_method.upper()}
 
-━━━━━━━━━━━━━━━━━━━━━━
+Need help? WhatsApp: +92 333 2742727
 
-Need help? Contact us on WhatsApp:
-+92 333 2742727
-
-Thank you for shopping with us! ✨
-
+Thank you for shopping with us!
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_mail(
+    html_message = f"""
+    <html>
+    <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:#0a0a0a;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+            <h1 style="color:#b8960c;margin:0;font-size:24px;">BRAND BAZAR</h1>
+            <p style="color:#fff;margin:5px 0;font-size:12px;letter-spacing:3px;">BY MIRSA</p>
+        </div>
+        <div style="background:#fff;padding:20px;border:1px solid #eee;">
+            <h2 style="color:#111;">🚚 Your Order is on its Way!</h2>
+            <p style="color:#555;">Hi <strong>{customer_name}</strong>, great news! Your order has been shipped and will be delivered to you soon.</p>
+
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                <tr><td style="padding:5px;color:#888;">Order</td><td style="padding:5px;font-weight:bold;">{order.order_number}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Total</td><td style="padding:5px;color:#b8960c;font-weight:bold;">Rs. {order.total}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Payment</td><td style="padding:5px;">{order.payment_method.upper()}</td></tr>
+            </table>
+
+            <div style="margin-top:20px;padding:15px;background:#f0f9f0;border-radius:8px;text-align:center;border:1px solid #c3e6cb;">
+                <p style="margin:0;color:#155724;font-size:14px;">📦 Your package is on its way! Expected delivery in 3-5 working days.</p>
+            </div>
+
+            <div style="margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px;text-align:center;">
+                <p style="margin:0;color:#555;font-size:14px;">Need help? Contact us on WhatsApp</p>
+                <a href="https://wa.me/923332742727" style="color:#25d366;font-weight:bold;font-size:16px;">+92 333 2742727</a>
+            </div>
+        </div>
+        <div style="background:#f5f5f5;padding:10px;text-align:center;font-size:12px;color:#888;border-radius:0 0 8px 8px;">
+            Brand Bazar by Mirsa © 2026 | <a href="https://brandbazarbymirsa.com" style="color:#b8960c;">brandbazarbymirsa.com</a>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = EmailMultiAlternatives(
         subject=f'Order {order.order_number} Shipped — Brand Bazar by Mirsa',
-        message=message,
+        body=plain_message,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[customer_email],
-        fail_silently=True,
+        to=[customer_email],
     )
+    msg.attach_alternative(html_message, "text/html")
+    msg.send(fail_silently=True)
 
 
 def send_order_cancelled_customer(order):
@@ -301,34 +325,58 @@ def send_order_cancelled_customer(order):
         customer_name = order.guest_name
         customer_email = order.guest_email
 
-    message = f"""
+    plain_message = f"""
 Hi {customer_name},
 
-We're informing you that your order {order.order_number} has been cancelled.
-
-━━━━━━━━━━━━━━━━━━━━━━
-ORDER DETAILS
-━━━━━━━━━━━━━━━━━━━━━━
+Your order {order.order_number} has been cancelled.
 
 Order {order.order_number}
 Total: Rs. {order.total}
 Payment: {order.payment_method.upper()}
 
-━━━━━━━━━━━━━━━━━━━━━━
-
-If you have any questions or did not request this cancellation,
-please contact us immediately on WhatsApp:
-+92 333 2742727
-
-We hope to serve you again soon!
+Questions? WhatsApp: +92 333 2742727
 
 — Brand Bazar by Mirsa Team
     """.strip()
 
-    send_mail(
+    html_message = f"""
+    <html>
+    <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:#0a0a0a;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+            <h1 style="color:#b8960c;margin:0;font-size:24px;">BRAND BAZAR</h1>
+            <p style="color:#fff;margin:5px 0;font-size:12px;letter-spacing:3px;">BY MIRSA</p>
+        </div>
+        <div style="background:#fff;padding:20px;border:1px solid #eee;">
+            <h2 style="color:#111;">❌ Order Cancelled</h2>
+            <p style="color:#555;">Hi <strong>{customer_name}</strong>, we're informing you that your order has been cancelled.</p>
+
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                <tr><td style="padding:5px;color:#888;">Order</td><td style="padding:5px;font-weight:bold;">{order.order_number}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Total</td><td style="padding:5px;">Rs. {order.total}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Payment</td><td style="padding:5px;">{order.payment_method.upper()}</td></tr>
+            </table>
+
+            <div style="margin-top:20px;padding:15px;background:#fff3f3;border-radius:8px;text-align:center;border:1px solid #f5c6cb;">
+                <p style="margin:0;color:#721c24;font-size:14px;">If you did not request this cancellation, please contact us immediately.</p>
+            </div>
+
+            <div style="margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px;text-align:center;">
+                <p style="margin:0;color:#555;font-size:14px;">Contact us on WhatsApp</p>
+                <a href="https://wa.me/923332742727" style="color:#25d366;font-weight:bold;font-size:16px;">+92 333 2742727</a>
+            </div>
+        </div>
+        <div style="background:#f5f5f5;padding:10px;text-align:center;font-size:12px;color:#888;border-radius:0 0 8px 8px;">
+            Brand Bazar by Mirsa © 2026 | <a href="https://brandbazarbymirsa.com" style="color:#b8960c;">brandbazarbymirsa.com</a>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = EmailMultiAlternatives(
         subject=f'Order {order.order_number} Cancelled — Brand Bazar by Mirsa',
-        message=message,
+        body=plain_message,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[customer_email],
-        fail_silently=True,
+        to=[customer_email],
     )
+    msg.attach_alternative(html_message, "text/html")
+    msg.send(fail_silently=True)
