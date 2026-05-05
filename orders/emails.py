@@ -1,12 +1,36 @@
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.conf import settings
+from products.models import ProductImage
+
+
+def get_product_image(product):
+    if not product:
+        return None
+    img = ProductImage.objects.filter(product=product, is_primary=True).first()
+    if not img:
+        img = ProductImage.objects.filter(product=product).first()
+    return img.image.url if img else None
 
 
 def send_order_placed_admin(order):
-    items_text = '\n'.join([
-        f"  - {item.name} x{item.quantity} = Rs. {item.subtotal}"
-        for item in order.items.all()
-    ])
+    items_data = []
+    for item in order.items.select_related('product', 'product__category', 'variant').all():
+        image_url = get_product_image(item.product)
+        category = item.product.category.name if item.product and item.product.category else ''
+        variant_info = ''
+        if item.variant:
+            variant_info = f"{item.variant.size}{' / ' + item.variant.color if item.variant.color else ''}"
+        product_url = f"https://brandbazarbymirsa.com/products/{item.product.slug}" if item.product else ''
+        items_data.append({
+            'name': item.name,
+            'category': category,
+            'variant': variant_info,
+            'quantity': item.quantity,
+            'price': item.subtotal,
+            'image_url': image_url,
+            'product_url': product_url,
+        })
+
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -16,8 +40,30 @@ def send_order_placed_admin(order):
         customer_email = order.guest_email
         customer_phone = order.guest_phone or 'Not provided'
 
-    message = f"""
-New Order Received! 🛍️
+    items_html = ''
+    for item in items_data:
+        image_tag = f'<img src="{item["image_url"]}" width="80" height="80" style="object-fit:cover;border-radius:4px;" />' if item['image_url'] else '📦'
+        variant_tag = f'<br><small style="color:#888;">Variant: {item["variant"]}</small>' if item['variant'] else ''
+        items_html += f"""
+        <tr>
+            <td style="padding:10px;border-bottom:1px solid #eee;width:100px;text-align:center;">{image_tag}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee;">
+                <a href="{item['product_url']}" style="color:#b8960c;font-weight:bold;text-decoration:none;">{item['name']}</a>
+                <br><small style="color:#888;">{item['category']}</small>
+                {variant_tag}
+                <br><small>Qty: {item['quantity']}</small>
+            </td>
+            <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">Rs. {item['price']}</td>
+        </tr>
+        """
+
+    items_text = '\n'.join([
+        f"  - {i['name']} ({i['category']}) {i['variant']} x{i['quantity']} = Rs. {i['price']}"
+        for i in items_data
+    ])
+
+    plain_message = f"""
+New Order Received!
 
 Order {order.order_number}
 Customer: {customer_name}
@@ -31,19 +77,57 @@ Subtotal: Rs. {order.subtotal}
 Delivery: Rs. {order.delivery_charge}
 Total: Rs. {order.total}
 
-Payment Method: {order.payment_method.upper()}
-Payment Status: {order.payment_status.upper()}
-
-Order Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
+Payment: {order.payment_method.upper()}
+Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
     """.strip()
 
-    send_mail(
+    html_message = f"""
+    <html>
+    <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:#0a0a0a;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+            <h1 style="color:#b8960c;margin:0;font-size:24px;">BRAND BAZAR</h1>
+            <p style="color:#fff;margin:5px 0;font-size:12px;letter-spacing:3px;">BY MIRSA</p>
+        </div>
+        <div style="background:#fff;padding:20px;border:1px solid #eee;">
+            <h2 style="color:#111;">🛍️ New Order Received!</h2>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                <tr><td style="padding:5px;color:#888;">Order</td><td style="padding:5px;font-weight:bold;">{order.order_number}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Customer</td><td style="padding:5px;">{customer_name}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Email</td><td style="padding:5px;">{customer_email}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Phone</td><td style="padding:5px;">{customer_phone}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Payment</td><td style="padding:5px;">{order.payment_method.upper()}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Date</td><td style="padding:5px;">{order.created_at.strftime('%d %B %Y, %I:%M %p')}</td></tr>
+            </table>
+
+            <h3 style="color:#111;border-bottom:2px solid #b8960c;padding-bottom:8px;">Order Items</h3>
+            <table style="width:100%;border-collapse:collapse;">
+                {items_html}
+            </table>
+
+            <table style="width:100%;margin-top:20px;">
+                <tr><td style="padding:5px;color:#888;">Subtotal</td><td style="padding:5px;text-align:right;">Rs. {order.subtotal}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Delivery</td><td style="padding:5px;text-align:right;">Rs. {order.delivery_charge}</td></tr>
+                <tr style="font-size:18px;font-weight:bold;">
+                    <td style="padding:10px 5px;color:#111;border-top:2px solid #b8960c;">Total</td>
+                    <td style="padding:10px 5px;text-align:right;color:#b8960c;border-top:2px solid #b8960c;">Rs. {order.total}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="background:#f5f5f5;padding:10px;text-align:center;font-size:12px;color:#888;border-radius:0 0 8px 8px;">
+            Brand Bazar by Mirsa © 2026
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = EmailMultiAlternatives(
         subject=f'New Order {order.order_number} — Brand Bazar by Mirsa',
-        message=message,
+        body=plain_message,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[settings.ADMIN_EMAIL],
-        fail_silently=True,
+        to=[settings.ADMIN_EMAIL],
     )
+    msg.attach_alternative(html_message, "text/html")
+    msg.send(fail_silently=True)
 
 
 def send_order_confirmation_customer(order):
