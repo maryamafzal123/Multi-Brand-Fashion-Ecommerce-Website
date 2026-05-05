@@ -252,6 +252,20 @@ Need help? WhatsApp: +92 333 2742727
     msg.send(fail_silently=True)
 
 def send_order_shipped_customer(order):
+    items_data = []
+    for item in order.items.select_related('product', 'product__category', 'variant').all():
+        image_url = get_product_image(item.product)
+        variant_info = ''
+        if item.variant:
+            variant_info = f"{item.variant.size}{' / ' + item.variant.color if item.variant.color else ''}"
+        items_data.append({
+            'name': item.name,
+            'quantity': item.quantity,
+            'price': item.subtotal,
+            'image_url': image_url,
+            'variant': variant_info,
+        })
+
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -259,19 +273,27 @@ def send_order_shipped_customer(order):
         customer_name = order.guest_name
         customer_email = order.guest_email
 
+    items_html = ''
+    for item in items_data:
+        image_tag = f'<img src="{item["image_url"]}" width="80" height="80" style="object-fit:cover;border-radius:4px;" />' if item['image_url'] else '📦'
+        variant_tag = f'<br><small style="color:#888;">Variant: {item["variant"]}</small>' if item['variant'] else ''
+        items_html += f"""
+        <tr>
+            <td style="padding:10px;border-bottom:1px solid #eee;width:100px;text-align:center;">{image_tag}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee;">
+                <strong>{item['name']}</strong>
+                {variant_tag}
+                <br><small>Qty: {item['quantity']}</small>
+            </td>
+            <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">Rs. {item['price']}</td>
+        </tr>
+        """
+
     plain_message = f"""
 Hi {customer_name}!
-
-Great news! Your order {order.order_number} is on its way to you!
-
-Order {order.order_number}
+Your order {order.order_number} has been shipped!
 Total: Rs. {order.total}
-Payment: {order.payment_method.upper()}
-
 Need help? WhatsApp: +92 333 2742727
-
-Thank you for shopping with us!
-— Brand Bazar by Mirsa Team
     """.strip()
 
     html_message = f"""
@@ -283,7 +305,7 @@ Thank you for shopping with us!
         </div>
         <div style="background:#fff;padding:20px;border:1px solid #eee;">
             <h2 style="color:#111;">🚚 Your Order is on its Way!</h2>
-            <p style="color:#555;">Hi <strong>{customer_name}</strong>, great news! Your order has been shipped and will be delivered to you soon.</p>
+            <p style="color:#555;">Hi <strong>{customer_name}</strong>, your order has been shipped and will be delivered soon.</p>
 
             <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
                 <tr><td style="padding:5px;color:#888;">Order</td><td style="padding:5px;font-weight:bold;">{order.order_number}</td></tr>
@@ -291,8 +313,13 @@ Thank you for shopping with us!
                 <tr><td style="padding:5px;color:#888;">Payment</td><td style="padding:5px;">{order.payment_method.upper()}</td></tr>
             </table>
 
+            <h3 style="color:#111;border-bottom:2px solid #b8960c;padding-bottom:8px;">Items Shipped</h3>
+            <table style="width:100%;border-collapse:collapse;">
+                {items_html}
+            </table>
+
             <div style="margin-top:20px;padding:15px;background:#f0f9f0;border-radius:8px;text-align:center;border:1px solid #c3e6cb;">
-                <p style="margin:0;color:#155724;font-size:14px;">📦 Your package is on its way! Expected delivery in 3-5 working days.</p>
+                <p style="margin:0;color:#155724;font-size:14px;">📦 Expected delivery in 3-5 working days.</p>
             </div>
 
             <div style="margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px;text-align:center;">
@@ -318,6 +345,20 @@ Thank you for shopping with us!
 
 
 def send_order_cancelled_customer(order):
+    items_data = []
+    for item in order.items.select_related('product', 'product__category', 'variant').all():
+        image_url = get_product_image(item.product)
+        variant_info = ''
+        if item.variant:
+            variant_info = f"{item.variant.size}{' / ' + item.variant.color if item.variant.color else ''}"
+        items_data.append({
+            'name': item.name,
+            'quantity': item.quantity,
+            'price': item.subtotal,
+            'image_url': image_url,
+            'variant': variant_info,
+        })
+
     if order.user:
         customer_name = order.user.full_name
         customer_email = order.user.email
@@ -325,17 +366,27 @@ def send_order_cancelled_customer(order):
         customer_name = order.guest_name
         customer_email = order.guest_email
 
+    items_html = ''
+    for item in items_data:
+        image_tag = f'<img src="{item["image_url"]}" width="80" height="80" style="object-fit:cover;border-radius:4px;" />' if item['image_url'] else '📦'
+        variant_tag = f'<br><small style="color:#888;">Variant: {item["variant"]}</small>' if item['variant'] else ''
+        items_html += f"""
+        <tr>
+            <td style="padding:10px;border-bottom:1px solid #eee;width:100px;text-align:center;">{image_tag}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee;">
+                <strong>{item['name']}</strong>
+                {variant_tag}
+                <br><small>Qty: {item['quantity']}</small>
+            </td>
+            <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">Rs. {item['price']}</td>
+        </tr>
+        """
+
     plain_message = f"""
 Hi {customer_name},
-
 Your order {order.order_number} has been cancelled.
-
-Order {order.order_number}
 Total: Rs. {order.total}
-Payment: {order.payment_method.upper()}
-
 Questions? WhatsApp: +92 333 2742727
-
 — Brand Bazar by Mirsa Team
     """.strip()
 
@@ -354,6 +405,11 @@ Questions? WhatsApp: +92 333 2742727
                 <tr><td style="padding:5px;color:#888;">Order</td><td style="padding:5px;font-weight:bold;">{order.order_number}</td></tr>
                 <tr><td style="padding:5px;color:#888;">Total</td><td style="padding:5px;">Rs. {order.total}</td></tr>
                 <tr><td style="padding:5px;color:#888;">Payment</td><td style="padding:5px;">{order.payment_method.upper()}</td></tr>
+            </table>
+
+            <h3 style="color:#111;border-bottom:2px solid #b8960c;padding-bottom:8px;">Cancelled Items</h3>
+            <table style="width:100%;border-collapse:collapse;">
+                {items_html}
             </table>
 
             <div style="margin-top:20px;padding:15px;background:#fff3f3;border-radius:8px;text-align:center;border:1px solid #f5c6cb;">
