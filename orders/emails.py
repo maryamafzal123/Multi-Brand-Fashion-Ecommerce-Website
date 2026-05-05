@@ -398,7 +398,7 @@ Questions? WhatsApp: +92 333 2742727
             <p style="color:#fff;margin:5px 0;font-size:12px;letter-spacing:3px;">BY MIRSA</p>
         </div>
         <div style="background:#fff;padding:20px;border:1px solid #eee;">
-            <h2 style="color:#111;">❌ Order Cancelled</h2>
+            <h2 style="color:#111;">Order Cancelled</h2>
             <p style="color:#555;">Hi <strong>{customer_name}</strong>, we're informing you that your order has been cancelled.</p>
 
             <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
