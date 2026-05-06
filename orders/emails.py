@@ -69,6 +69,7 @@ Order {order.order_number}
 Customer: {customer_name}
 Email: {customer_email}
 Phone: {customer_phone}
+Address: {order.guest_address}
 
 Items:
 {items_text}
@@ -95,6 +96,7 @@ Date: {order.created_at.strftime('%d %B %Y, %I:%M %p')}
                 <tr><td style="padding:5px;color:#888;">Customer</td><td style="padding:5px;">{customer_name}</td></tr>
                 <tr><td style="padding:5px;color:#888;">Email</td><td style="padding:5px;">{customer_email}</td></tr>
                 <tr><td style="padding:5px;color:#888;">Phone</td><td style="padding:5px;">{customer_phone}</td></tr>
+                <tr><td style="padding:5px;color:#888;">Address</td><td style="padding:5px;">{order.guest_address}</td></tr>
                 <tr><td style="padding:5px;color:#888;">Payment</td><td style="padding:5px;">{order.payment_method.upper()}</td></tr>
                 <tr><td style="padding:5px;color:#888;">Date</td><td style="padding:5px;">{order.created_at.strftime('%d %B %Y, %I:%M %p')}</td></tr>
             </table>
