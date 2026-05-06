@@ -143,9 +143,38 @@ class OrderCreateSerializer(serializers.Serializer):
                 Product.objects.filter(id=product.id).update(stock=F('stock') - qty)
 
         order.calculate_total()
+        # Auto-save guest info to Users and Addresses
+        if not is_authenticated:
+            from users.models import User, Address
+            guest_email   = validated_data.get('guest_email', '')
+            guest_name    = validated_data.get('guest_name', '')
+            guest_phone   = validated_data.get('guest_phone', '')
+            guest_address = validated_data.get('guest_address', '')
+
+            if guest_email:
+                user, created = User.objects.get_or_create(
+                    email=guest_email,
+                    defaults={
+                        'full_name': guest_name,
+                        'phone': guest_phone,
+                        'role': 'customer',
+                        'is_active': True,
+                    }
+                )
+                if guest_address:
+                    parts = [p.strip() for p in guest_address.split(',')]
+                    Address.objects.create(
+                        user=user,
+                        label='Home',
+                        street=parts[0] if len(parts) > 0 else guest_address,
+                        city=parts[1] if len(parts) > 1 else '',
+                        province=parts[2] if len(parts) > 2 else '',
+                    )
+
         transaction.on_commit(lambda: send_order_placed_admin(order))
         transaction.on_commit(lambda: send_order_confirmation_customer(order))
         return order
+                
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
