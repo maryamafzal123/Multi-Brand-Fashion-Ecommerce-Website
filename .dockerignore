@@ -1,0 +1,7 @@
+.env
+.env.local
+venv
+.git
+media
+__pycache__
+frontend
